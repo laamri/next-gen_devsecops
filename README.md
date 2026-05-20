@@ -1,7 +1,7 @@
 # Next-Gen DevSecOps Platform
 
 > Plateforme intelligente d'automatisation DevSecOps pilotée par l'IA : de la description
-> en langage naturel à la génération, la validation et le suivi de pipelines CI/CD sécurisés.
+> en langage naturel vers la génération, la validation et l'exécution de pipelines CI/CD sécurisés.
 
 ![Stack](https://img.shields.io/badge/stack-FastAPI%20%7C%20React%20%7C%20Jenkins-blue)
 ![Security](https://img.shields.io/badge/security-DevSecOps%20%7C%20Trivy%20%7C%20SonarQube-red)
@@ -15,6 +15,7 @@
 
 - [Vue d'ensemble](#vue-densemble)
 - [Architecture](#architecture)
+- [Fonctionnalités principales](#fonctionnalités-principales)
 - [Structure du projet](#structure-du-projet)
 - [Prérequis](#prérequis)
 - [Installation](#installation)
@@ -22,32 +23,36 @@
 - [Utilisation](#utilisation)
 - [Sécurité](#sécurité)
 - [Tests](#tests)
+- [Nettoyage local](#nettoyage-local)
+- [Bonnes pratiques Git](#bonnes-pratiques-git)
 - [Contribuer](#contribuer)
+- [Auteurs](#auteurs)
 
 ---
 
 ## Vue d'ensemble
 
-Next-Gen DevSecOps est une plateforme intelligente qui vise à simplifier la mise en place
-d'une chaîne DevSecOps moderne. L'utilisateur décrit son besoin en langage naturel depuis
-une interface web, puis la plateforme génère automatiquement des artefacts techniques
-exploitables dans un environnement CI/CD.
+**Next-Gen DevSecOps** est une plateforme web qui automatise la création de pipelines DevSecOps
+à partir d'une simple description en langage naturel.
 
-La solution permet notamment de générer :
+L'utilisateur décrit le besoin technique depuis une interface React. Le backend FastAPI reçoit
+la requête, vérifie l'authentification, applique les règles de sécurité, interagit avec un moteur
+d'intelligence artificielle et génère des artefacts DevSecOps prêts à l'emploi.
 
-- Un **Jenkinsfile** pour l'orchestration du pipeline CI/CD
-- Un **Dockerfile** pour la conteneurisation de l'application
-- Des fichiers **Terraform** pour préparer l'infrastructure cloud
-- Des manifestes **Kubernetes** pour le déploiement applicatif
-- Un rapport de validation et de sécurité consultable depuis l'interface
+La plateforme permet de générer automatiquement :
 
-Les artefacts générés sont validés, normalisés, puis poussés automatiquement vers un dépôt
-GitHub dédié. Jenkins, configuré en pipeline multibranche, détecte ensuite les nouvelles
-branches, exécute les étapes de validation et archive les résultats.
+- un **Jenkinsfile** pour l'orchestration CI/CD ;
+- un **Dockerfile** pour la conteneurisation ;
+- des fichiers **Terraform** pour l'Infrastructure as Code ;
+- des fichiers de configuration liés au déploiement ;
+- des rapports de validation et de sécurité.
 
-L'objectif du projet est de combiner l'intelligence artificielle, le CI/CD, la sécurité,
-l'Infrastructure as Code, la conteneurisation, le cloud computing et le monitoring dans
-une plateforme cohérente et automatisée.
+Les artefacts générés sont ensuite validés, organisés, puis envoyés automatiquement vers GitHub.
+Jenkins peut ensuite détecter les changements, exécuter le pipeline, lancer les contrôles de sécurité
+et produire un rapport d'exécution.
+
+L'objectif du projet est de combiner l'intelligence artificielle, l'automatisation DevOps,
+la sécurité continue, l'Infrastructure as Code, le cloud et le monitoring dans une solution unique.
 
 ---
 
@@ -56,75 +61,106 @@ une plateforme cohérente et automatisée.
 ```text
 Utilisateur
    |
-   | Description en langage naturel
+   | Description du besoin en langage naturel
    v
-[Frontend React]
+[Frontend React / Vite]
    |
-   | Requête HTTP sécurisée
+   | Requête HTTP vers l'API
    v
 [Backend FastAPI]
    |
    | Authentification JWT
-   | Contrôle d'accès RBAC
-   | Validation du prompt utilisateur
+   | Contrôle d'accès
+   | Validation de la demande
    v
 [Moteur IA - Groq API]
    |
-   | Génération structurée des artefacts
+   | Génération des artefacts DevSecOps
    v
 [Validation Backend]
    |
+   | Vérification du contenu généré
    | Normalisation des fichiers
-   | Validation Jenkinsfile / Dockerfile / Terraform / Kubernetes
-   | Templates de secours si génération incomplète
+   | Contrôle des sorties
    v
-[GitHub Repository]
+[GitHub]
    |
-   | Push automatique sur une branche générée
+   | Push automatique des artefacts
    v
-[Jenkins Multibranch Pipeline]
+[Jenkins]
    |
-   | Lecture du Jenkinsfile
-   | Validation des artefacts
-   | Analyse statique SonarQube
-   | Build Docker
+   | Pipeline CI/CD
+   | Analyse SonarQube
    | Scan Trivy
+   | Build Docker
    | Terraform plan
    v
-[AWS - Préparation Infrastructure]
+[AWS / Infrastructure]
    |
-   | Vérification de la configuration cloud
-   | Utilisation de credentials sécurisés
+   | Préparation ou validation de l'environnement cloud
    v
-[Monitoring & Reporting]
+[Monitoring]
    |
    | Prometheus
    | Grafana
-   | Rapport final envoyé au backend
    v
 [Interface utilisateur]
    |
-   | Statut du build
-   | Résultats SonarQube
-   | Résultats Trivy
-   | Niveau de risque
-   | Rapport téléchargeable
-Structure du projet
+   | Historique
+   | Statut
+   | Rapport
+   | Résultats de sécurité
+```
+
+---
+
+## Fonctionnalités principales
+
+La plateforme propose plusieurs fonctionnalités autour de l'automatisation DevSecOps :
+
+- génération automatique d'artefacts CI/CD à partir d'un prompt ;
+- backend FastAPI structuré et sécurisé ;
+- frontend React moderne avec plusieurs pages fonctionnelles ;
+- authentification utilisateur ;
+- intégration avec GitHub ;
+- génération de Jenkinsfile ;
+- génération de Dockerfile ;
+- génération de configurations Terraform ;
+- analyse de sécurité avec Trivy ;
+- analyse statique avec SonarQube ;
+- suivi des pipelines ;
+- monitoring avec Prometheus ;
+- visualisation possible avec Grafana ;
+- tests unitaires backend ;
+- séparation claire entre backend, frontend, monitoring, Jenkins, Terraform et tests.
+
+---
+
+## Structure du projet
+
+```text
 Next-Gen-DevSecOps/
 │
 ├── backend/                         # Backend principal de la plateforme
 │   ├── api/                         # Routes API FastAPI
-│   ├── security/                    # Modules de sécurité
+│   ├── security/                    # Modules liés à la sécurité
 │   ├── services/                    # Services métier
 │   ├── utils/                       # Fonctions utilitaires
 │   └── main.py                      # Point d'entrée du backend FastAPI
 │
-├── frontend/                        # Interface utilisateur React
+├── frontend/                        # Interface utilisateur React / Vite
 │   ├── src/
 │   │   ├── components/              # Composants réutilisables
-│   │   ├── hooks/                   # Hooks React personnalisés
-│   │   ├── lib/                     # Configuration API et fonctions communes
-│   │   ├── pages/                   # Pages principales de l'application
+│   │   │   └── Navbar.tsx
+│   │   │
+│   │   ├── hooks/                   # Hooks personnalisés
+│   │   │   └── useAuth.ts
+│   │   │
+│   │   ├── lib/                     # Fonctions communes et configuration API
+│   │   │   ├── api.ts
+│   │   │   └── utils.ts
+│   │   │
+│   │   ├── pages/                   # Pages principales
 │   │   │   ├── DashboardPage.tsx
 │   │   │   ├── EditorPage.tsx
 │   │   │   ├── GeneratorPage.tsx
@@ -132,8 +168,13 @@ Next-Gen-DevSecOps/
 │   │   │   ├── LoginPage.tsx
 │   │   │   ├── MonitoringPage.tsx
 │   │   │   └── SettingsPage.tsx
-│   │   └── main.tsx                 # Point d'entrée React
-│   └── package.json
+│   │   │
+│   │   ├── App.tsx                  # Composant principal
+│   │   ├── main.tsx                 # Point d'entrée React
+│   │   └── styles.css               # Styles globaux
+│   │
+│   ├── package.json                 # Dépendances frontend
+│   └── vite.config.ts               # Configuration Vite
 │
 ├── jenkins/
 │   └── templates/                   # Templates Jenkins utilisés par la génération
@@ -144,8 +185,8 @@ Next-Gen-DevSecOps/
 ├── terraform/                       # Infrastructure as Code
 │   ├── main.tf                      # Configuration principale Terraform
 │   ├── environments/
-│   │   ├── staging/                 # Environnement de staging
-│   │   └── prod/                    # Environnement de production
+│   │   ├── staging/                 # Environnement staging
+│   │   └── prod/                    # Environnement production
 │   ├── guardrails/                  # Règles de contrôle IaC
 │   └── modules/
 │       ├── ec2/                     # Module EC2
@@ -154,6 +195,15 @@ Next-Gen-DevSecOps/
 │
 ├── tests/
 │   ├── backend/                     # Tests unitaires backend
+│   │   ├── test_artifact_generator.py
+│   │   ├── test_auth.py
+│   │   ├── test_github_pusher.py
+│   │   ├── test_groq_client.py
+│   │   ├── test_output_validator.py
+│   │   ├── test_pipeline_generator.py
+│   │   ├── test_prompt_guard.py
+│   │   └── test_threat_analyzer.py
+│   │
 │   ├── frontend/                    # Tests frontend
 │   └── integration/                 # Tests d'intégration
 │
@@ -161,87 +211,135 @@ Next-Gen-DevSecOps/
 ├── .github/                        # Workflows GitHub
 ├── .env.example                    # Exemple de variables d'environnement
 ├── .gitignore                      # Fichiers ignorés par Git
-├── docker-compose.yml              # Stack locale
 ├── CONTRIBUTING.md                 # Guide de contribution
+├── docker-compose.yml              # Services Docker locaux
 └── README.md                       # Documentation principale
-Prérequis
+```
 
-Avant de lancer le projet, il faut installer :
+---
 
-Python 3.10 ou supérieur
-Node.js 18 ou supérieur
-npm
-Git
-Docker et Docker Compose
-Terraform
-Jenkins
-SonarQube
-Trivy
-Un compte GitHub
-Un compte AWS
-Une clé API Groq
-Installation
-1. Cloner le projet
+## Prérequis
+
+Avant de lancer le projet, les outils suivants doivent être installés :
+
+- Python 3.10 ou supérieur ;
+- Node.js 18 ou supérieur ;
+- npm ;
+- Git ;
+- Docker ;
+- Docker Compose ;
+- Terraform ;
+- Jenkins ;
+- SonarQube ;
+- Trivy ;
+- un compte GitHub ;
+- un compte AWS ;
+- une clé API Groq.
+
+---
+
+## Installation
+
+### 1. Cloner le projet
+
+```bash
 git clone https://github.com/oussama-bagy/Next-Gen-DevSecOps.git
 cd Next-Gen-DevSecOps
-2. Préparer le fichier d'environnement
+```
+
+### 2. Préparer le fichier d'environnement
+
+```bash
 cp .env.example .env
+```
 
-Ensuite, modifier le fichier .env avec les vraies valeurs locales.
+Ensuite, modifier le fichier `.env` avec les vraies valeurs locales.
 
-Important : le fichier .env ne doit jamais être envoyé sur GitHub.
+> Important : le fichier `.env` contient des secrets. Il ne doit jamais être envoyé sur GitHub.
 
-3. Installer le backend
+---
+
+### 3. Installer le backend
+
+```bash
 cd backend
 pip install -r requirements.txt
-4. Lancer le backend
+```
+
+### 4. Lancer le backend
+
+```bash
 uvicorn main:app --reload --port 8000
+```
 
-Le backend sera disponible sur :
+Le backend est disponible sur :
 
+```text
 http://localhost:8000
+```
 
-La documentation Swagger sera disponible sur :
+La documentation Swagger est disponible sur :
 
+```text
 http://localhost:8000/docs
-5. Installer le frontend
+```
+
+---
+
+### 5. Installer le frontend
 
 Dans un autre terminal :
 
+```bash
 cd frontend
 npm install
-6. Lancer le frontend
+```
+
+### 6. Lancer le frontend
+
+```bash
 npm run dev
+```
 
-L'interface sera disponible sur :
+L'interface web est disponible sur :
 
+```text
 http://localhost:5173
-7. Lancer les services avec Docker Compose
+```
 
-Selon la configuration locale du projet :
+---
 
+### 7. Lancer la stack locale avec Docker Compose
+
+Depuis la racine du projet :
+
+```bash
 docker-compose up -d
+```
 
-Cette commande peut lancer les services nécessaires comme le backend, le monitoring,
-ou les outils associés selon le contenu du fichier docker-compose.yml.
+Cette commande permet de lancer les services définis dans le fichier `docker-compose.yml`.
 
-Variables d'environnement
+---
 
-Les variables sensibles doivent être placées dans le fichier .env.
+## Variables d'environnement
 
-Variable	Description
-GROQ_API_KEY	Clé API utilisée pour communiquer avec le modèle IA
-JWT_SECRET_KEY	Clé secrète utilisée pour signer les tokens JWT
-GITHUB_TOKEN	Token GitHub utilisé pour pousser les artefacts générés
-GITHUB_REPO	Dépôt GitHub cible pour les pipelines générés
-AWS_ACCESS_KEY_ID	Identifiant d'accès AWS
-AWS_SECRET_ACCESS_KEY	Clé secrète AWS
-AWS_REGION	Région AWS utilisée par Terraform
-SONAR_TOKEN	Token utilisé pour l'analyse SonarQube
-PROMETHEUS_PORT	Port d'exposition des métriques Prometheus
+Les variables sensibles doivent être placées dans le fichier `.env`.
+
+| Variable | Description |
+|---------|-------------|
+| `GROQ_API_KEY` | Clé API utilisée pour communiquer avec le modèle IA |
+| `JWT_SECRET_KEY` | Clé secrète utilisée pour signer les tokens JWT |
+| `GITHUB_TOKEN` | Token GitHub utilisé pour pousser les artefacts générés |
+| `GITHUB_REPO` | Dépôt GitHub cible |
+| `AWS_ACCESS_KEY_ID` | Identifiant d'accès AWS |
+| `AWS_SECRET_ACCESS_KEY` | Clé secrète AWS |
+| `AWS_REGION` | Région AWS utilisée |
+| `SONAR_TOKEN` | Token SonarQube |
+| `PROMETHEUS_PORT` | Port Prometheus |
 
 Exemple :
 
+```env
 GROQ_API_KEY=your_groq_api_key
 JWT_SECRET_KEY=your_jwt_secret
 GITHUB_TOKEN=your_github_token
@@ -251,113 +349,179 @@ AWS_SECRET_ACCESS_KEY=your_aws_secret_key
 AWS_REGION=eu-west-3
 SONAR_TOKEN=your_sonar_token
 PROMETHEUS_PORT=9090
+```
 
-Le fichier .env.example peut être versionné.
-Le fichier .env réel doit rester uniquement en local.
+> Le fichier `.env.example` peut être versionné.
+> Le fichier `.env` réel doit rester uniquement en local.
 
-Utilisation
-1. Accéder à l'application
+---
 
-Après le lancement du frontend, ouvrir :
+## Utilisation
 
+### 1. Accéder à l'application
+
+Après avoir lancé le frontend, ouvrir :
+
+```text
 http://localhost:5173
-2. Se connecter
+```
+
+---
+
+### 2. Se connecter
 
 L'utilisateur accède à la plateforme via la page de connexion.
-Le backend vérifie l'authentification à l'aide de JWT et applique un contrôle d'accès
-basé sur les rôles.
 
-3. Générer un pipeline DevSecOps
+Le backend vérifie l'authentification et protège les routes sensibles à l'aide d'un mécanisme
+basé sur les tokens JWT.
 
-Depuis la page de génération, l'utilisateur saisit une description comme :
+---
 
+### 3. Générer un pipeline DevSecOps
+
+Depuis la page de génération, l'utilisateur saisit une demande en langage naturel.
+
+Exemple :
+
+```text
 Créer un pipeline DevSecOps pour une application Node.js conteneurisée avec Docker,
 analyse SonarQube, scan Trivy et préparation d'une infrastructure AWS avec Terraform.
+```
 
-La plateforme génère ensuite les artefacts nécessaires :
+La plateforme génère ensuite les artefacts nécessaires.
 
-Jenkinsfile
-Dockerfile
-Fichiers Terraform
-Manifestes Kubernetes
-Rapport de sécurité
-4. Publication sur GitHub
+---
 
-Après validation, les fichiers générés sont poussés automatiquement vers un dépôt GitHub
-sur une branche dédiée.
+### 4. Vérifier les artefacts générés
 
-5. Exécution Jenkins
+Les fichiers générés peuvent inclure :
 
-Jenkins détecte la nouvelle branche grâce au pipeline multibranche, lit le Jenkinsfile,
-puis exécute les étapes suivantes :
+- `Jenkinsfile`
+- `Dockerfile`
+- fichiers Terraform
+- fichiers de configuration
+- rapport de validation
+- rapport de sécurité
 
-Validation des artefacts
-Analyse statique avec SonarQube
-Construction de l'image Docker
-Scan de vulnérabilités avec Trivy
-Exécution de terraform plan
-Archivage des résultats
-Envoi du rapport final au backend
-6. Consultation du rapport
+---
 
-Depuis l'interface frontend, l'utilisateur peut consulter :
+### 5. Publication sur GitHub
 
-Le statut du pipeline
-Les résultats SonarQube
-Les résultats Trivy
-Le niveau de risque
-Les logs principaux
-Le rapport final téléchargeable
-Sécurité
+Après génération et validation, les fichiers sont envoyés automatiquement vers GitHub.
+
+Le projet peut créer une branche dédiée pour chaque génération afin de garder un historique
+propre des pipelines produits.
+
+---
+
+### 6. Exécution Jenkins
+
+Jenkins détecte les changements et exécute le pipeline.
+
+Le pipeline peut contenir les étapes suivantes :
+
+- récupération du code ;
+- validation des artefacts ;
+- analyse statique avec SonarQube ;
+- build Docker ;
+- scan de vulnérabilités avec Trivy ;
+- exécution de `terraform plan` ;
+- archivage des résultats ;
+- génération du rapport final.
+
+---
+
+### 7. Consultation des résultats
+
+Depuis l'interface utilisateur, il est possible de consulter :
+
+- l'historique des générations ;
+- le statut du pipeline ;
+- les résultats de sécurité ;
+- les logs principaux ;
+- les rapports générés ;
+- les informations de monitoring.
+
+---
+
+## Sécurité
 
 La plateforme applique plusieurs mécanismes de sécurité afin de réduire les risques liés
 à l'utilisation de l'IA, aux secrets, aux artefacts générés et à l'automatisation CI/CD.
 
-Mécanisme	Description
-Validation du prompt	Bloque les demandes dangereuses, destructrices ou non conformes
-Prompt système renforcé	Encadre le comportement du modèle IA
-Mode JSON structuré	Réduit les réponses incomplètes ou non exploitables
-Validation des artefacts	Vérifie les fichiers générés avant leur publication
-Templates de secours	Remplacent les artefacts incomplets par des versions valides
-JWT	Sécurise l'authentification utilisateur
-RBAC	Limite les actions selon le rôle de l'utilisateur
-GitHub Token	Permet le push automatique sans exposer les identifiants
-Jenkins Credentials	Protège les secrets utilisés dans les pipelines
-SonarQube	Analyse statique du code
-Trivy	Scan de vulnérabilités des images Docker
-Terraform plan	Vérifie l'infrastructure avant tout déploiement réel
-Prometheus	Collecte les métriques techniques
-Grafana	Visualise l'état de la plateforme
-Tests
-Tests backend
+| Mécanisme | Description |
+|----------|-------------|
+| Validation des entrées | Vérifie les prompts utilisateur avant traitement |
+| Protection contre les prompts dangereux | Réduit les risques d'instructions malveillantes |
+| Authentification JWT | Protège l'accès à l'API |
+| Contrôle d'accès | Limite les actions selon le rôle de l'utilisateur |
+| Validation des artefacts | Vérifie les fichiers générés avant publication |
+| GitHub Token | Permet le push automatique sans exposer les identifiants |
+| Jenkins Credentials | Protège les secrets utilisés dans les pipelines |
+| SonarQube | Analyse statique du code |
+| Trivy | Scan de vulnérabilités des images Docker |
+| Terraform plan | Vérifie l'infrastructure avant application |
+| Prometheus | Collecte les métriques techniques |
+| Grafana | Visualise l'état de la plateforme |
+
+---
+
+## Tests
+
+### Tests backend
+
+Depuis la racine du projet :
+
+```bash
 pytest tests/backend -v
-Tests avec couverture
+```
+
+---
+
+### Tests backend avec couverture
+
+```bash
 pytest tests/backend --cov=backend --cov-report=html
-Tests frontend
+```
+
+---
+
+### Tests frontend
+
+```bash
 cd frontend
 npm test
-Vérification Git
+```
+
+---
+
+### Vérification Git
+
+```bash
 git status --short
-Vérification des fichiers ignorés
+```
+
+---
+
+### Vérifier les fichiers ignorés
+
+```bash
 git check-ignore -v .env
 git check-ignore -v frontend/node_modules
 git check-ignore -v terraform/.terraform
-Nettoyage local recommandé
+git check-ignore -v terraform/terraform.tfstate
+```
 
-Certains fichiers ne doivent pas être versionnés car ils sont générés automatiquement
-ou contiennent des informations locales.
+---
 
-À supprimer localement si nécessaire :
+## Nettoyage local
 
-git clean -fdX -e .env -e start.ps1
+Certains fichiers ne doivent pas être versionnés car ils sont générés automatiquement,
+volumineux ou propres à la machine locale.
 
-Cette commande supprime les fichiers ignorés par Git tout en conservant :
+Fichiers et dossiers généralement à ne pas pousser :
 
-.env
-start.ps1
-
-Fichiers généralement ignorés :
-
+```text
 .env
 .pytest_cache/
 __pycache__/
@@ -367,59 +531,105 @@ frontend/.vite/
 terraform/.terraform/
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
-Bonnes pratiques Git
+```
 
-Avant chaque commit :
+Pour nettoyer les fichiers ignorés localement tout en gardant `.env` et `start.ps1` :
 
+```bash
+git clean -fdX -e .env -e start.ps1
+```
+
+Explication :
+
+- `git clean` supprime les fichiers non suivis ;
+- `-f` force la suppression ;
+- `-d` inclut les dossiers ;
+- `-X` supprime seulement les fichiers ignorés par `.gitignore` ;
+- `-e .env` conserve le fichier `.env` ;
+- `-e start.ps1` conserve le script local `start.ps1`.
+
+---
+
+## Bonnes pratiques Git
+
+Avant chaque commit, vérifier l'état du projet :
+
+```bash
 git status --short
+```
 
 Ajouter uniquement les fichiers utiles :
 
+```bash
 git add README.md
+git add .gitignore
 git add backend/
 git add frontend/src/
-git add terraform/
-git add monitoring/
 git add jenkins/
+git add monitoring/
+git add terraform/
+git add tests/
+```
 
-Créer un commit :
+Créer un commit clair :
 
+```bash
 git commit -m "docs: update final project README"
+```
 
 Pousser vers GitHub :
 
+```bash
 git push origin main
+```
 
 Ne jamais pousser :
 
+```text
 .env
 node_modules/
 dist/
 .vite/
 .terraform/
 terraform.tfstate
+terraform.tfstate.backup
 __pycache__/
 .pytest_cache/
-Contribuer
+```
 
-Voir le fichier CONTRIBUTING.md pour les conventions de branches,
-de commits et de contribution au projet.
+---
 
-Auteurs
+## Contribuer
+
+Les contributions doivent respecter une organisation claire du code, des commits lisibles
+et une séparation entre les fonctionnalités backend, frontend, sécurité, infrastructure
+et monitoring.
+
+Pour plus de détails, consulter le fichier :
+
+```text
+CONTRIBUTING.md
+```
+
+---
+
+## Auteurs
 
 Projet Fin de Semestre — ENSA Marrakech 2026
 
-Bagy Oussama
-Sayf Eddine Laamri
+- Bagy Oussama
+- Sayf Eddine Laamri
 
 Filière : Cybersécurité & Télécommunications
 
-Conclusion
+---
+
+## Conclusion
 
 Next-Gen DevSecOps démontre qu'il est possible de combiner l'intelligence artificielle,
 l'automatisation CI/CD, la sécurité continue, l'Infrastructure as Code, le cloud computing
-et le monitoring dans une plateforme moderne et cohérente.
+et le monitoring dans une seule plateforme moderne.
 
-La plateforme constitue une base solide pour évoluer vers des fonctionnalités plus avancées,
-comme l'auto-correction des erreurs, l'estimation des coûts AWS, le déploiement complet
-vers ECS, le monitoring avancé et le support multi-cloud.
+Le projet constitue une base solide pour évoluer vers des fonctionnalités plus avancées,
+comme l'auto-correction des erreurs, l'estimation des coûts cloud, le déploiement complet
+vers AWS, l'amélioration du monitoring et le support multi-cloud.
