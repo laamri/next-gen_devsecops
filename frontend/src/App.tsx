@@ -20,7 +20,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         {/* Redirection racine → générateur */}
-        <Route path="/" element={<Navigate to="/generator" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Route publique */}
         <Route path="/login" element={<LoginPage />} />

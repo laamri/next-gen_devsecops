@@ -115,3 +115,5 @@ jenkins/.jenkins/
 frontend/.vite/
 backend/data/
 Next-Gen-DevSecOps/
+
+.minimax/

@@ -515,7 +515,7 @@ def _ensure_valid_jenkinsfile(content: str) -> str:
                     sh 'cd terraform && terraform init -input=false'
                     sh 'cd terraform && terraform validate'
                     sh 'cd terraform && terraform apply -auto-approve -input=false -var=docker_image=$DOCKER_USER/nextgen-app:$BUILD_NUMBER'
-                    sh 'cd terraform && terraform output -raw public_ip || echo "No IP yet"'
+                    sh 'cd terraform && terraform output -raw public_ip > /tmp/deployed_ip.txt 2>/dev/null || echo "N/A" > /tmp/deployed_ip.txt'
                 }
             }
             post {
@@ -537,16 +537,14 @@ def _ensure_valid_jenkinsfile(content: str) -> str:
                 def buildStatus = currentBuild.currentResult ?: 'UNKNOWN'
                 def deployedIp = 'N/A'
                 try {
-                    deployedIp = sh(script: 'AWS_DEFAULT_REGION=eu-west-3 aws ec2 describe-instances --filters "Name=tag:Project,Values=PFS-2026" "Name=instance-state-name,Values=running" --query "Reservations[-1].Instances[-1].PublicIpAddress" --output text 2>/dev/null || echo "N/A"', returnStdout: true).trim()
-                } catch(e) {}
-                def deployedUrl = (deployedIp != 'N/A' && deployedIp != 'None' && deployedIp != '') ? "http://${deployedIp}:80" : 'N/A'
-                sh """
-                    curl -s -X POST http://host.docker.internal:8000/api/v1/pipeline/report \\
-                      -H 'Content-Type: application/json' \\
-                      -d '{"branch":"${env.BRANCH_NAME}","build_number":"${env.BUILD_NUMBER}","status":"${buildStatus}","duration_ms":${currentBuild.duration},"deployed_url":"${deployedUrl}"}' || true
-                    echo 'Report sent'
-                """
-                echo "Pipeline status: ${buildStatus} - App: ${deployedUrl}"
+                    deployedIp = sh(script: 'cat /tmp/deployed_ip.txt 2>/dev/null || echo "N/A"', returnStdout: true).trim()
+                } catch(e) {
+                    deployedIp = 'N/A'
+                }
+                def deployedUrl = (deployedIp != 'N/A' && deployedIp != 'None' && deployedIp != '') ? 'http://' + deployedIp + ':80' : 'N/A'
+                def reportData = '{"branch":"' + env.BRANCH_NAME + '","build_number":"' + env.BUILD_NUMBER + '","status":"' + buildStatus + '","duration_ms":' + currentBuild.duration + ',"deployed_url":"' + deployedUrl + '"}'
+                sh "curl -s -X POST http://host.docker.internal:8000/api/v1/pipeline/report -H 'Content-Type: application/json' -d '" + reportData + "' || true"
+                echo 'Report sent: ' + buildStatus + ' - URL: ' + deployedUrl
             }
         }
     }

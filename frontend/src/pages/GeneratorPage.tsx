@@ -83,6 +83,10 @@ export default function GeneratorPage() {
   const [pipelineStatus, setPipelineStatus]   = useState<string | null>(() =>
     localStorage.getItem('nextgen_pipeline_status')
   )
+  // Warmup EC2 : compte à rebours 120s + état de vérification
+  const [warmupCountdown, setWarmupCountdown] = useState<number | null>(null)
+  const [appReady, setAppReady]               = useState<'unknown' | 'ready' | 'not-ready'>('unknown')
+  const warmupTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const logRef         = useRef<HTMLDivElement>(null)
   const logId          = useRef(0)
   const pollingRef     = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -97,10 +101,11 @@ export default function GeneratorPage() {
     setLogs(prev => [...prev, { id: logId.current++, text, type }])
   }
 
-  // Arrêter le polling quand le composant est démonté
+  // Arrêter le polling et le warmup quand le composant est démonté
   useEffect(() => {
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
+      if (warmupTimerRef.current) clearInterval(warmupTimerRef.current)
     }
   }, [])
 
@@ -124,6 +129,22 @@ export default function GeneratorPage() {
       localStorage.setItem('nextgen_pipeline_running', 'false')
       localStorage.setItem('nextgen_pipeline_status', status)
       if (pollingRef.current) clearInterval(pollingRef.current)
+
+      // Démarrer le compte à rebours de 120s uniquement si une vraie IP est disponible
+      if (status === 'deployed') {
+        setWarmupCountdown(120)
+        setAppReady('unknown')
+        let remaining = 120
+        if (warmupTimerRef.current) clearInterval(warmupTimerRef.current)
+        warmupTimerRef.current = setInterval(() => {
+          remaining -= 1
+          setWarmupCountdown(remaining)
+          if (remaining <= 0 && warmupTimerRef.current) {
+            clearInterval(warmupTimerRef.current)
+            warmupTimerRef.current = null
+          }
+        }, 1_000)
+      }
     }
 
     pollingRef.current = setInterval(async () => {
@@ -134,11 +155,11 @@ export default function GeneratorPage() {
         if (match) {
           const failed = match.status === 'FAILURE' || match.status === 'ABORTED' || match.status === 'UNKNOWN'
           if (failed) {
-            finishPolling('failed', 'failure')
+            finishPolling('', 'failed')
           } else if (match.deployed_url && match.deployed_url !== 'N/A' && match.deployed_url !== 'None') {
-            finishPolling(match.deployed_url, 'success')
+            finishPolling(match.deployed_url, 'deployed')
           } else {
-            finishPolling('success-local', 'success')
+            finishPolling('', 'success-local')
           }
         }
       } catch {
@@ -154,6 +175,23 @@ export default function GeneratorPage() {
     }, 600_000)
   }
 
+  // Reprendre le polling si le pipeline était en cours lors du retour sur la page
+  useEffect(() => {
+    const running = localStorage.getItem('nextgen_pipeline_running')
+    const branch  = localStorage.getItem('nextgen_generated_branch')
+    const status  = localStorage.getItem('nextgen_pipeline_status')
+    const url     = localStorage.getItem('nextgen_deployed_url')
+
+    if (url && url !== '') setDeployedUrl(url)
+    if (status) setPipelineStatus(status as any)
+
+    if (running === 'true' && branch && !status) {
+      setPipelineRunning(true)
+      setGeneratedBranch(branch)
+      startPolling(branch)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleGenerate = async () => {
     if (!prompt.trim()) return
     setLoading(true)
@@ -165,6 +203,9 @@ export default function GeneratorPage() {
     setPipelineRunning(false)
     setPipelineStatus(null)
     setGeneratedBranch(null)
+    setWarmupCountdown(null)
+    setAppReady('unknown')
+    if (warmupTimerRef.current) { clearInterval(warmupTimerRef.current); warmupTimerRef.current = null }
     localStorage.removeItem('nextgen_pipeline_running')
     localStorage.removeItem('nextgen_deployed_url')
     localStorage.removeItem('nextgen_generated_branch')
@@ -419,27 +460,82 @@ export default function GeneratorPage() {
               </div>
             )}
 
-            {/* SUCCESS avec IP publique EC2 */}
-            {deployedUrl && deployedUrl !== 'local' && deployedUrl !== 'success-local' && deployedUrl !== 'failed' && (
+            {/* SUCCESS avec IP publique EC2 — warmup EC2 puis vérification */}
+            {pipelineStatus === 'deployed' && deployedUrl && (
               <div className="mb-4 rounded-lg border border-success/30 bg-success/10 p-4 text-left">
                 <div className="flex items-center gap-2 mb-2">
                   <Rocket className="h-4 w-4 text-success" />
                   <span className="text-sm font-semibold text-success">App déployée sur EC2 !</span>
                 </div>
-                <p className="text-xs text-muted-foreground mb-3">L'application est accessible à :</p>
-                <a
-                  href={deployedUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg border border-success/40 bg-success/15 px-4 py-2 text-sm font-semibold text-success hover:bg-success/25 transition-colors"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  Ouvrir l'app — {deployedUrl}
-                </a>
+                <p className="text-xs text-muted-foreground mb-1">
+                  App déployée sur{' '}
+                  <span className="font-mono text-success">{deployedUrl}</span>
+                </p>
+
+                {/* Phase 1 : compte à rebours */}
+                {warmupCountdown !== null && warmupCountdown > 0 && appReady === 'unknown' && (
+                  <div className="mt-3">
+                    <p className="text-xs text-muted-foreground mb-2">
+                      L'instance EC2 démarre… Attendez ~2 minutes avant d'ouvrir.
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-success transition-all duration-1000"
+                          style={{ width: `${((120 - warmupCountdown) / 120) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-xs font-mono text-muted-foreground w-10 text-right">
+                        {warmupCountdown}s
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Phase 2 : bouton de vérification */}
+                {(warmupCountdown === null || warmupCountdown <= 0) && appReady !== 'ready' && (
+                  <div className="mt-3">
+                    <button
+                      onClick={async () => {
+                        try {
+                          await fetch(deployedUrl, { mode: 'no-cors' })
+                          setAppReady('ready')
+                        } catch {
+                          setAppReady('not-ready')
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 rounded-lg border border-success/40 bg-success/15 px-4 py-2 text-sm font-semibold text-success hover:bg-success/25 transition-colors"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Vérifier si l'app est prête
+                    </button>
+                    {appReady === 'not-ready' && (
+                      <p className="mt-2 text-xs text-warning">
+                        Pas encore prête, réessayer dans 30 secondes.
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Phase 3 : app prête */}
+                {appReady === 'ready' && (
+                  <div className="mt-3">
+                    <p className="text-xs text-success font-semibold mb-2">L'app est prête !</p>
+                    <a
+                      href={deployedUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 rounded-lg border border-success/40 bg-success/15 px-4 py-2 text-sm font-semibold text-success hover:bg-success/25 transition-colors"
+                    >
+                      <ExternalLink className="h-4 w-4" />
+                      Ouvrir l'app — {deployedUrl}
+                    </a>
+                  </div>
+                )}
               </div>
             )}
             {/* SUCCESS sans IP publique */}
-            {deployedUrl === 'success-local' && (
+            {pipelineStatus === 'success-local' && (
               <div className="mb-4 rounded-lg border border-success/30 bg-success/10 p-4 text-left">
                 <div className="flex items-center gap-2">
                   <Rocket className="h-4 w-4 text-success" />
@@ -451,15 +547,24 @@ export default function GeneratorPage() {
               </div>
             )}
             {/* FAILURE / ABORTED */}
-            {deployedUrl === 'failed' && (
+            {pipelineStatus === 'failed' && (
               <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-left">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mb-2">
                   <Rocket className="h-4 w-4 text-destructive" />
-                  <span className="text-sm font-semibold text-destructive">Pipeline échoué — Vérifier Jenkins</span>
+                  <span className="text-sm font-semibold text-destructive">Pipeline échoué</span>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Un ou plusieurs stages ont échoué. Consultez les logs Jenkins pour plus de détails.
+                <p className="text-xs text-muted-foreground mb-3">
+                  Une erreur s'est produite dans Jenkins. Vérifiez les logs.
                 </p>
+                <a
+                  href="http://localhost:8080"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/15 px-4 py-2 text-sm font-semibold text-destructive hover:bg-destructive/25 transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  Voir dans Jenkins
+                </a>
               </div>
             )}
 
