@@ -18,7 +18,9 @@ COPY requirements.txt .
 
 # [SECURITY] --no-cache-dir : ne pas stocker le cache pip dans l'image
 # --user : installation dans ~/.local pour ne pas contaminer le système
-RUN pip install --no-cache-dir --user -r requirements.txt
+# [FIX] Upgrade pip d'abord pour éviter les warnings et résoudre les deps plus vite
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir --user -r requirements.txt
 
 # ---- Stage 2 : Image de production -------------------------
 FROM python:3.11-slim AS runtime
@@ -50,8 +52,9 @@ ENV PATH=/home/appuser/.local/bin:$PATH
 EXPOSE 8000
 
 # Healthcheck : Docker vérifie que l'app répond toutes les 30s
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import httpx; httpx.get('http://localhost:8000/health')" || exit 1
+# [FIX] Utilise curl plus léger que httpx pour le healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
 
 # [WHY uvicorn et pas gunicorn] :
 # uvicorn supporte async/await natif — crucial pour les appels à Groq API
