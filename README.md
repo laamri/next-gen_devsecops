@@ -243,8 +243,8 @@ Before running the project, the following tools must be installed:
 ### 1. Clone the project
 
 ```bash
-git clone https://github.com/oussama-bagy/Next-Gen-DevSecOps.git
-cd Next-Gen-DevSecOps
+git clone https://github.com/laamri/next-gen_devsecops.git
+cd next-gen_devsecops
 ```
 
 ### 2. Set up the environment file
